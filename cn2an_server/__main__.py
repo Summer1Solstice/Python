@@ -1,5 +1,5 @@
-from sys import argv
 import cn2an
+import argparse
 from http import server
 from urllib.parse import urlparse, parse_qs
 
@@ -11,16 +11,15 @@ class MyHTTPRequestHandler(server.BaseHTTPRequestHandler):
         url = urlparse(url)
         path = url.path
         if path == "/favicon.ico":
-            self.send_error(404)
-            self.wfile.write()
+            self.send_error(404, "Not Found")
             return
         args = parse_qs(url.query)
         self.send_response(200)
         self.send_header("Content-type", "text/plain; charset=utf-8")
         self.end_headers()
         if "text" not in args:
-            self.send_response(400)
             result = f"参数错误：缺少必要参数 text"
+            self.send_response(400)
             self.wfile.write(result.encode())
             return
         for i in args:
@@ -43,15 +42,14 @@ class MyHTTPRequestHandler(server.BaseHTTPRequestHandler):
 
 
 if __name__ == "__main__":
-    if len(argv) <= 1 or len(argv) > 3:
-        exit(1)
-    port = int(argv[1])
-    try:
-        host = argv[2]
-    except IndexError:
-        host = "localhost"
-    server_instance = server.HTTPServer((host, port), MyHTTPRequestHandler)
-    print(f"Server running at http://{host}:{port}")
+    parser = argparse.ArgumentParser(description="A simple HTTP server for cn2an")
+    parser.add_argument("port", type=int, help="Port number")
+    parser.add_argument("-b", "--bind", default="localhost", help="Host")
+    parser.add_argument("-v", "--version", action="version", version="%(prog)s 1.0")
+    args = parser.parse_args()
+
+    server_instance = server.HTTPServer((args.bind, args.port), MyHTTPRequestHandler)
+    print(f"Server running at http://{args.bind}:{args.port}")
 
     try:
         server_instance.serve_forever()
